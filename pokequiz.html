@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pokémon Quiz</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    :root{
+      --bg:#0f0f0f;--surface:#1a1a1a;--surface2:#242424;
+      --border:#2e2e2e;--text:#f0f0f0;--muted:#888;
+      --accent:#f5c518;--accent2:#e05c2a;
+      --ok:#2ecc71;--bad:#e74c3c;--radius:10px;
+    }
+    html,body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100%;}
+    #app{max-width:480px;margin:0 auto;padding:1.5rem 1rem 3rem;}
+
+    /* HOME */
+    #home{animation:fadeUp .4s ease both;}
+    .home-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(3rem,12vw,5rem);letter-spacing:.04em;line-height:.95;color:var(--accent);text-shadow:4px 4px 0 var(--accent2);}
+    .home-sub{font-size:13px;color:var(--muted);margin-top:6px;letter-spacing:.08em;text-transform:uppercase;}
+    .mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:28px;}
+    .mode-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 16px;cursor:pointer;transition:transform .15s,border-color .15s,box-shadow .15s;position:relative;overflow:hidden;}
+    .mode-card:hover{transform:translateY(-3px);border-color:var(--accent);box-shadow:0 8px 32px rgba(245,197,24,.12);}
+    .mode-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(245,197,24,.06) 0%,transparent 60%);pointer-events:none;}
+    .mode-icon{font-size:2.2rem;margin-bottom:10px;display:block;}
+    .mode-name{font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:.04em;color:var(--accent);display:block;}
+    .mode-desc{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.4;}
+    .diff-row{display:flex;gap:8px;margin-top:28px;align-items:center;}
+    .diff-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;flex-shrink:0;}
+    .diff-btns{display:flex;gap:6px;}
+    .dbtn{padding:5px 14px;font-size:12px;font-family:'DM Sans',sans-serif;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer;transition:all .15s;}
+    .dbtn.active{background:var(--accent);color:#000;border-color:var(--accent);font-weight:500;}
+
+    /* GAME */
+    #game-screen{animation:fadeUp .3s ease both;}
+    .game-header{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
+    .back-btn{background:none;border:1px solid var(--border);border-radius:6px;padding:5px 10px;color:var(--muted);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;}
+    .back-btn:hover{border-color:var(--accent);color:var(--accent);}
+    .game-title{font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:.04em;color:var(--accent);}
+    .progress-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+    .round-info{font-size:12px;color:var(--muted);}
+    .score-info{font-size:12px;color:var(--muted);margin-left:auto;}
+    .dots{display:flex;gap:5px;}
+    .dot{width:8px;height:8px;border-radius:50%;background:var(--border);}
+    .dot.active{background:var(--accent);}
+    .dot.ok{background:var(--ok);}
+    .dot.bad{background:var(--bad);}
+
+    /* IMAGE BOX */
+    .img-box{display:flex;justify-content:center;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;margin-bottom:12px;min-height:200px;position:relative;}
+    .img-box canvas,.img-box img{display:block;border-radius:6px;}
+    .mode-badge{position:absolute;top:8px;right:10px;font-size:10px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;}
+
+    /* HINTS */
+    .hint-strip{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px;min-height:28px;}
+    .hint{font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid var(--border);color:var(--muted);background:var(--surface);}
+    .hint.on{color:var(--accent);border-color:rgba(245,197,24,.4);background:rgba(245,197,24,.07);}
+    .hint.na{opacity:.25;}
+
+    /* ANSWER CARD */
+    .answer-card{display:flex;align-items:center;gap:14px;padding:10px 14px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);margin-bottom:12px;}
+    .answer-card .sprite{width:60px;height:60px;background:var(--surface2);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;}
+    .answer-card .sprite img{width:60px;height:60px;object-fit:contain;}
+    .aname{font-family:'Bebas Neue',sans-serif;font-size:1.3rem;letter-spacing:.03em;text-transform:capitalize;}
+    .adex{font-size:12px;color:var(--muted);margin-top:1px;}
+    .atypes{display:flex;gap:5px;margin-top:5px;flex-wrap:wrap;}
+    .tpill{font-size:10px;padding:2px 8px;border-radius:20px;text-transform:capitalize;font-weight:500;color:#fff;}
+
+    /* FEEDBACK */
+    .feedback{text-align:center;font-weight:500;min-height:22px;margin-bottom:8px;font-family:'Bebas Neue',sans-serif;letter-spacing:.04em;font-size:1.1rem;}
+    .feedback.ok{color:var(--ok);}
+    .feedback.bad{color:var(--bad);}
+    .wrong-wrap{display:flex;gap:5px;flex-wrap:wrap;min-height:22px;margin-bottom:8px;}
+    .wtag{font-size:11px;padding:2px 9px;border-radius:20px;background:rgba(231,76,60,.15);color:var(--bad);text-transform:capitalize;border:1px solid rgba(231,76,60,.3);}
+
+    /* INPUT */
+    .input-row{display:flex;gap:8px;margin-bottom:10px;position:relative;}
+    .guess-input{flex:1;height:40px;padding:0 12px;font-size:14px;font-family:'DM Sans',sans-serif;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);color:var(--text);}
+    .guess-input:focus{outline:none;border-color:var(--accent);}
+    .guess-input:disabled{opacity:.4;}
+    .guess-btn{height:40px;padding:0 18px;font-size:13px;font-family:'DM Sans',sans-serif;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;transition:all .15s;}
+    .guess-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent);}
+    .guess-btn:disabled{opacity:.3;cursor:default;}
+    .ac-list{position:absolute;top:42px;left:0;right:62px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);z-index:30;overflow:hidden;display:none;}
+    .aci{padding:8px 12px;font-size:13px;cursor:pointer;text-transform:capitalize;color:var(--text);}
+    .aci:hover,.aci.sel{background:var(--surface2);}
+
+    /* BUTTONS */
+    .btn-row{display:flex;gap:8px;justify-content:center;}
+    .abtn{padding:8px 20px;font-size:13px;font-family:'DM Sans',sans-serif;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;transition:all .15s;}
+    .abtn:hover{border-color:var(--accent);color:var(--accent);}
+    .abtn.hi{background:var(--accent);color:#000;border-color:var(--accent);font-weight:500;}
+    .abtn.hi:hover{background:#e0b000;}
+
+    /* RESULTS */
+    .results{text-align:center;padding:2rem 0;animation:fadeUp .3s ease both;}
+    .results-score{font-family:'Bebas Neue',sans-serif;font-size:4rem;color:var(--accent);text-shadow:3px 3px 0 var(--accent2);line-height:1;}
+    .results-sub{font-size:13px;color:var(--muted);margin-top:4px;}
+    .results-dots{display:flex;gap:10px;justify-content:center;margin:20px 0;}
+    .rdot{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;}
+    .rdot.ok{background:rgba(46,204,113,.15);color:var(--ok);border:1px solid rgba(46,204,113,.3);}
+    .rdot.bad{background:rgba(231,76,60,.15);color:var(--bad);border:1px solid rgba(231,76,60,.3);}
+    .results-msg{font-size:13px;color:var(--muted);margin-bottom:24px;}
+
+    @keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+  </style>
+</head>
+<body>
+<div id="app">
+  <div id="home"></div>
+  <div id="game-screen" style="display:none"></div>
+</div>
+
+<script>
+(function(){
+const ROUNDS=5,MAX_G=3,ZOOM=4.5,CS=200,MIN_OPAQUE=0.25,MAX_ATT=40;
+const ROTATIONS=[0,90,180,270];
+const TC={fire:'#c0392b',grass:'#27ae60',water:'#2980b9',electric:'#f39c12',psychic:'#8e44ad',ice:'#3498db',dragon:'#6c3483',dark:'#2c3e50',fairy:'#e91e8c',normal:'#7f8c8d',fighting:'#c0392b',flying:'#85c1e9',poison:'#8e44ad',ground:'#d35400',rock:'#7f8c8d',bug:'#27ae60',ghost:'#6c3483',steel:'#566573'};
+const DIFFS={easy:{label:'Easy',rotate:false,bw:false},medium:{label:'Medium',rotate:true,bw:false},hard:{label:'Hard',rotate:true,bw:true}};
+const HS={easy:[['type'],[]],medium:[['type'],['unrotate']],hard:[['type'],['unrotate','color']]};
+const GR=[[1,151],[152,251],[252,386],[387,493],[494,649],[650,721],[722,809],[810,905],[906,1025]];
+
+let allMon=[],used=[],cur=null,guesses=[],done=false;
+let score=0,roundIdx=0,history=[],acIdx=-1;
+let diff='hard',mode='zoom';
+let offscreen=null,crop=null,rot=0,hints=new Set();
+let enterReady=false;
+
+document.addEventListener('keydown',function(e){
+  if(e.key!=='Enter')return;
+  const inp=document.getElementById('ginput');
+  if(inp&&!inp.disabled&&document.activeElement===inp)return;
+  if(done&&enterReady){e.preventDefault();document.querySelector('#btn-row .abtn.hi')?.click();}
+});
+
+async function boot(){
+  renderHome();
+  try{
+    const r=await fetch('https://pokeapi.co/api/v2/pokemon?limit=1025');
+    const d=await r.json();
+    allMon=d.results.map((p,i)=>({name:p.name,id:i+1}));
+    renderHome();
+  }catch(e){
+    document.querySelector('.home-sub').textContent='Failed to load — check connection';
+  }
+}
+
+function renderHome(){
+  document.getElementById('home').style.display='';
+  document.getElementById('game-screen').style.display='none';
+  document.getElementById('home').innerHTML=`
+    <div style="margin-bottom:24px">
+      <div class="home-title">Pokémon<br>Quiz</div>
+      <div class="home-sub">${allMon.length?allMon.length+' Pokémon · All Generations':'Loading Pokédex…'}</div>
+    </div>
+    <div class="mode-grid">
+      <div class="mode-card" onclick="_startMode('silhouette')">
+        <span class="mode-icon">👤</span>
+        <span class="mode-name">Silhouette</span>
+        <div class="mode-desc">Identify the Pokémon from its blacked-out shape</div>
+      </div>
+      <div class="mode-card" onclick="_startMode('zoom')">
+        <span class="mode-icon">🔍</span>
+        <span class="mode-name">Zoom In</span>
+        <div class="mode-desc">Identify the Pokémon from a zoomed-in crop</div>
+      </div>
+    </div>
+    <div class="diff-row">
+      <span class="diff-label">Difficulty</span>
+      <div class="diff-btns">
+        ${Object.entries(DIFFS).map(([k,v])=>`<button class="dbtn${diff===k?' active':''}" onclick="_setDiff('${k}')">${v.label}</button>`).join('')}
+      </div>
+    </div>
+    <div style="margin-top:14px;font-size:11px;color:var(--muted);line-height:1.8">
+      <span style="color:var(--accent)">Easy</span> — zoomed / normal &nbsp;·&nbsp;
+      <span style="color:var(--accent)">Medium</span> — rotated &nbsp;·&nbsp;
+      <span style="color:var(--accent)">Hard</span> — rotated + B&W
+    </div>
+  `;
+}
+
+function startGame(m){
+  if(!allMon.length)return;
+  mode=m;used=[];score=0;roundIdx=0;history=[];
+  document.getElementById('home').style.display='none';
+  nextRound();
+}
+
+function pickMon(){const p=allMon.filter(p=>!used.includes(p.id));return p[Math.floor(Math.random()*p.length)];}
+function genOf(id){for(let i=0;i<GR.length;i++)if(id>=GR[i][0]&&id<=GR[i][1])return i+1;return'?';}
+function isCorrect(val){return val===cur.name||val===cur.speciesName;}
+
+function dotsHTML(){
+  return Array.from({length:ROUNDS},(_,i)=>{
+    let c='dot';
+    if(i<roundIdx)c+=history[i]?.ok?' ok':' bad';
+    else if(i===roundIdx)c+=' active';
+    return `<div class="${c}"></div>`;
+  }).join('');
+}
+
+function diffHintDesc(){
+  if(mode==='silhouette')return'Hint 1: type &nbsp;·&nbsp; Hint 2: generation &nbsp;·&nbsp; Hint 3: size';
+  if(diff==='easy')return'Hint 1: type';
+  if(diff==='medium')return'Hint 1: type &nbsp;·&nbsp; Hint 2: orientation';
+  return'Hint 1: type &nbsp;·&nbsp; Hint 2+3: orientation + colour';
+}
+
+async function nextRound(){
+  if(roundIdx>=ROUNDS){showResults();return;}
+  guesses=[];done=false;crop=null;rot=0;offscreen=null;hints=new Set();enterReady=false;
+  const p=pickMon();used.push(p.id);
+  const gs=document.getElementById('game-screen');
+  gs.style.display='';
+  gs.innerHTML=`
+    <div class="game-header">
+      <button class="back-btn" onclick="_home()">← Home</button>
+      <span class="game-title">${mode==='zoom'?'🔍 Zoom In':'👤 Silhouette'}</span>
+    </div>
+    <div class="progress-row">
+      <span class="round-info">Round ${roundIdx+1}/${ROUNDS}</span>
+      <div class="dots">${dotsHTML()}</div>
+      <span class="score-info" id="slbl">Score: ${score}</span>
+    </div>
+    <div class="img-box" id="img-box">
+      ${mode==='zoom'
+        ?`<canvas id="zoom-canvas" width="${CS}" height="${CS}" style="border-radius:6px"></canvas>`
+        :`<img id="sil-img" src="" style="width:${CS}px;height:${CS}px;object-fit:contain;filter:brightness(0);transition:filter .7s ease" />`
+      }
+      <span class="mode-badge">${diff}</span>
+    </div>
+    <div class="hint-strip" id="hint-strip"></div>
+    <div class="answer-card" id="answer-card" style="display:none">
+      <div class="sprite"><img id="ac-img" src="" alt="" onerror="this.style.display='none'"/></div>
+      <div>
+        <div class="aname" id="ac-name"></div>
+        <div class="adex" id="ac-dex"></div>
+        <div class="atypes" id="ac-types"></div>
+      </div>
+    </div>
+    <div class="feedback" id="feedback"></div>
+    <div class="wrong-wrap" id="wrong-wrap"></div>
+    <div class="input-row">
+      <input class="guess-input" id="ginput" type="text" placeholder="Who's that Pokémon?" autocomplete="off"/>
+      <div class="ac-list" id="ac-list"></div>
+      <button class="guess-btn" id="gbtn">Guess</button>
+    </div>
+    <div class="btn-row" id="btn-row">
+      <button class="abtn" id="giveup-btn">Give up</button>
+    </div>
+    <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:10px">${diffHintDesc()}</div>
+  `;
+  document.getElementById('gbtn').addEventListener('click',submitGuess);
+  document.getElementById('giveup-btn').addEventListener('click',giveUp);
+  document.getElementById('ginput').addEventListener('input',onInput);
+  document.getElementById('ginput').addEventListener('keydown',onInputKey);
+  document.getElementById('ginput').focus();
+  try{
+    const r=await fetch(`https://pokeapi.co/api/v2/pokemon/${p.id}`);
+    const d=await r.json();
+    cur={
+      id:p.id,name:d.name,speciesName:d.species.name,displayName:d.species.name,
+      img:d.sprites.other?.['official-artwork']?.front_default||d.sprites.front_default,
+      sprite:`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.id}.png`,
+      types:d.types.map(t=>t.type.name),gen:genOf(p.id),
+      h:(d.height/10).toFixed(1),w:(d.weight/10).toFixed(1),
+    };
+    if(mode==='zoom')loadZoom();
+    else loadSilhouette();
+  }catch(e){
+    fb('Error loading, skipping…','bad');
+    setTimeout(()=>{roundIdx++;nextRound();},1200);
+  }
+}
+
+function loadZoom(){
+  const img=new Image();img.crossOrigin='anonymous';
+  img.onload=()=>{
+    offscreen=img;
+    const res=pickCrop(img);
+    if(res){crop=res.crop;rot=res.rot;}
+    else{const s=Math.min(img.naturalWidth,img.naturalHeight)/ZOOM;crop={sx:(img.naturalWidth-s)/2,sy:(img.naturalHeight-s)/2,side:s};rot=0;}
+    drawZoom(false);renderHints();
+  };
+  img.onerror=()=>{setTimeout(()=>{roundIdx++;nextRound();},1200);};
+  img.src=cur.img;
+}
+
+function pickCrop(img){
+  const iw=img.naturalWidth||475,ih=img.naturalHeight||475,side=Math.min(iw,ih)/ZOOM;
+  const probe=document.createElement('canvas');probe.width=probe.height=64;
+  const px=probe.getContext('2d'),need=Math.floor(64*64*MIN_OPAQUE);
+  for(let a=0;a<MAX_ATT;a++){
+    const sx=Math.random()*(iw-side),sy=Math.random()*(ih-side);
+    px.clearRect(0,0,64,64);px.drawImage(img,sx,sy,side,side,0,0,64,64);
+    const data=px.getImageData(0,0,64,64).data;
+    let op=0;for(let i=3;i<data.length;i+=4)if(data[i]>30)op++;
+    if(op>=need)return{crop:{sx,sy,side},rot:ROTATIONS[Math.floor(Math.random()*4)]};
+  }
+  return null;
+}
+
+function drawZoom(revealed){
+  const canvas=document.getElementById('zoom-canvas');
+  if(!canvas||!offscreen)return;
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,CS,CS);
+  if(revealed){ctx.drawImage(offscreen,0,0,CS,CS);return;}
+  const{sx,sy,side}=crop;
+  const cfg=DIFFS[diff];
+  const deg=(cfg.rotate&&!hints.has('unrotate'))?rot:0;
+  ctx.save();ctx.translate(CS/2,CS/2);ctx.rotate(deg*Math.PI/180);
+  ctx.drawImage(offscreen,sx,sy,side,side,-CS/2,-CS/2,CS,CS);
+  ctx.restore();
+  if(cfg.bw&&!hints.has('color')){
+    const id=ctx.getImageData(0,0,CS,CS),p=id.data;
+    for(let i=0;i<p.length;i+=4){const g=0.299*p[i]+0.587*p[i+1]+0.114*p[i+2];p[i]=p[i+1]=p[i+2]=g;}
+    ctx.putImageData(id,0,0);
+  }
+}
+
+function loadSilhouette(){
+  const img=document.getElementById('sil-img');
+  if(img)img.src=cur.img;
+  renderHints();
+}
+
+function revealSilhouette(){
+  const img=document.getElementById('sil-img');
+  if(img)img.style.filter='brightness(1)';
+}
+
+function renderHints(){
+  const el=document.getElementById('hint-strip');if(!el)return;
+  if(mode==='zoom'){
+    const s=[];
+    s.push(hints.has('type')?`<div class="hint on">Type: ${cur.types.join(' / ')}</div>`:`<div class="hint">Hint 1: type</div>`);
+    if(DIFFS[diff].rotate)s.push(hints.has('unrotate')?`<div class="hint on">Rotation removed</div>`:`<div class="hint">Hint 2: orientation</div>`);
+    else s.push(`<div class="hint na">—</div>`);
+    if(DIFFS[diff].bw)s.push(hints.has('color')?`<div class="hint on">Colour restored</div>`:`<div class="hint">Hint 3: colour</div>`);
+    else s.push(`<div class="hint na">—</div>`);
+    el.innerHTML=s.join('');
+  }else{
+    const s=[];
+    s.push(hints.has('type')?`<div class="hint on">Type: ${cur.types.join(' / ')}</div>`:`<div class="hint">Hint 1: type</div>`);
+    s.push(hints.has('gen')?`<div class="hint on">Gen ${cur.gen}</div>`:`<div class="hint">Hint 2: generation</div>`);
+    s.push(hints.has('size')?`<div class="hint on">${cur.h}m · ${cur.w}kg</div>`:`<div class="hint">Hint 3: size</div>`);
+    el.innerHTML=s.join('');
+  }
+}
+
+function applyHints(gi){
+  if(mode==='zoom'){
+    const sch=HS[diff];
+    if(gi<sch.length)sch[gi].forEach(h=>hints.add(h));
+    if(hints.has('unrotate')||hints.has('color'))drawZoom(false);
+  }else{
+    if(gi===0)hints.add('type');
+    else if(gi===1)hints.add('gen');
+    else if(gi===2)hints.add('size');
+  }
+  renderHints();
+}
+
+function showAnswerCard(){
+  if(!cur)return;
+  const card=document.getElementById('answer-card');if(!card)return;
+  document.getElementById('ac-img').src=cur.sprite;
+  document.getElementById('ac-img').alt=cur.displayName;
+  document.getElementById('ac-name').textContent=cur.displayName;
+  document.getElementById('ac-dex').textContent=`#${String(cur.id).padStart(3,'0')} · Gen ${cur.gen}`;
+  document.getElementById('ac-types').innerHTML=cur.types.map(t=>`<span class="tpill" style="background:${TC[t]||'#555'}">${t}</span>`).join('');
+  card.style.display='flex';
+}
+
+function endRound(){
+  done=true;enterReady=false;
+  if(mode==='zoom')drawZoom(true);
+  else revealSilhouette();
+  hints=new Set(['type','unrotate','color','gen','size']);
+  renderHints();showAnswerCard();
+  const inp=document.getElementById('ginput'),btn=document.getElementById('gbtn');
+  if(inp)inp.disabled=true;if(btn)btn.disabled=true;
+  roundIdx++;
+  const row=document.getElementById('btn-row');if(!row)return;
+  row.innerHTML=roundIdx>=ROUNDS
+    ?`<button class="abtn hi" id="next-btn" onclick="_qr()">See results</button>`
+    :`<button class="abtn hi" id="next-btn" onclick="_qn()">Next Pokémon →</button>`;
+  setTimeout(()=>{enterReady=true;},300);
+}
+
+function fb(msg,cls){const el=document.getElementById('feedback');if(el){el.textContent=msg;el.className='feedback '+(cls||'');}}
+
+function submitGuess(){
+  if(done)return;
+  const inp=document.getElementById('ginput');if(!inp)return;
+  const val=inp.value.trim().toLowerCase().replace(/\s+/g,'-');
+  inp.value='';
+  const acl=document.getElementById('ac-list');if(acl)acl.style.display='none';
+  if(!val)return;
+  if(guesses.includes(val)){fb('Already tried that!','bad');return;}
+  const gi=guesses.length;guesses.push(val);
+  if(isCorrect(val)){
+    const pts=MAX_G-guesses.length+1;score+=pts;
+    history.push({ok:true});
+    fb(`Correct! +${pts} point${pts!==1?'s':''}`, 'ok');
+    document.getElementById('slbl').textContent=`Score: ${score}`;
+    endRound();
+  }else{
+    const t=document.createElement('div');t.className='wtag';t.textContent=val;
+    document.getElementById('wrong-wrap')?.appendChild(t);
+    const left=MAX_G-guesses.length;
+    applyHints(gi);
+    if(left<=0){
+      history.push({ok:false});
+      const al=cur.name!==cur.speciesName?`${cur.speciesName} (${cur.name})`:cur.speciesName;
+      fb(`It was ${al}!`,'bad');endRound();
+    }else fb(`Wrong! ${left} guess${left!==1?'es':''} left.`,'bad');
+  }
+}
+
+function giveUp(){
+  if(done)return;
+  history.push({ok:false});
+  const al=cur.name!==cur.speciesName?`${cur.speciesName} (${cur.name})`:cur.speciesName;
+  fb(`It was ${al}!`,'bad');endRound();
+}
+
+function onInput(e){
+  const v=e.target.value.trim().toLowerCase();acIdx=-1;
+  const acl=document.getElementById('ac-list');if(!acl)return;
+  if(v.length<2){acl.style.display='none';return;}
+  const hits=allMon.filter(p=>p.name.startsWith(v)).slice(0,7);
+  if(!hits.length){acl.style.display='none';return;}
+  acl.innerHTML=hits.map(p=>`<div class="aci" data-n="${p.name}">${p.name}</div>`).join('');
+  acl.style.display='block';
+  acl.querySelectorAll('.aci').forEach(el=>el.addEventListener('click',()=>{
+    document.getElementById('ginput').value=el.dataset.n;
+    acl.style.display='none';
+    document.getElementById('ginput').focus();
+  }));
+}
+
+function onInputKey(e){
+  const acl=document.getElementById('ac-list'),items=acl?acl.querySelectorAll('.aci'):[];
+  if(e.key==='ArrowDown'){acIdx=Math.min(acIdx+1,items.length-1);hlAC(items);e.preventDefault();return;}
+  if(e.key==='ArrowUp'){acIdx=Math.max(acIdx-1,0);hlAC(items);e.preventDefault();return;}
+  if(e.key==='Escape'&&acl){acl.style.display='none';return;}
+  if(e.key==='Enter'){
+    if(acl&&acl.style.display!=='none'&&acIdx>=0&&items[acIdx]){
+      document.getElementById('ginput').value=items[acIdx].dataset.n;
+      acl.style.display='none';return;
+    }
+    const inp=document.getElementById('ginput');
+    if(inp&&!inp.disabled&&inp.value.trim())submitGuess();
+  }
+}
+
+function hlAC(items){items.forEach((el,i)=>el.classList.toggle('sel',i===acIdx));if(items[acIdx])items[acIdx].scrollIntoView({block:'nearest'});}
+
+function showResults(){
+  const gs=document.getElementById('game-screen');
+  const correct=history.filter(h=>h.ok).length,maxPts=ROUNDS*MAX_G;
+  gs.innerHTML=`
+    <div class="results">
+      <div style="font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">${mode==='zoom'?'Zoom In':'Silhouette'} · ${diff}</div>
+      <div class="results-score">${score}<span style="font-size:2rem;color:var(--muted)">/${maxPts}</span></div>
+      <div class="results-sub">${correct} of ${ROUNDS} correct</div>
+      <div class="results-dots">${history.map(h=>`<div class="rdot ${h.ok?'ok':'bad'}">${h.ok?'✓':'✗'}</div>`).join('')}</div>
+      <div class="results-msg">${rm(score,maxPts)}</div>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <button class="abtn hi" onclick="_restart()">Play again</button>
+        <button class="abtn" onclick="_home()">← Home</button>
+      </div>
+    </div>`;
+}
+
+function rm(s,m){const r=s/m;if(r===1)return'Perfect score — true Pokémon master.';if(r>=0.7)return'Solid work, trainer!';if(r>=0.4)return'Not bad — keep at it.';return'Rough round. The Pokédex awaits.';}
+
+window._startMode=m=>{if(allMon.length)startGame(m);};
+window._setDiff=d=>{diff=d;document.querySelectorAll('.dbtn').forEach(b=>b.classList.toggle('active',b.textContent===DIFFS[d].label));};
+window._home=()=>{done=false;document.getElementById('game-screen').style.display='none';renderHome();};
+window._qn=()=>nextRound();
+window._qr=()=>showResults();
+window._restart=()=>{used=[];score=0;roundIdx=0;history=[];nextRound();};
+
+// Make functions available to inline onclick handlers
+window._sd=window._setDiff;
+function _startMode(m){window._startMode(m);}
+function _setDiff(d){window._setDiff(d);}
+function _home(){window._home();}
+function _qn(){window._qn();}
+function _qr(){window._qr();}
+function _restart(){window._restart();}
+
+boot();
+})();
+</script>
+</body>
+</html>
